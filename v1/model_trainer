@@ -1,0 +1,15 @@
+            class ModelTrainer():
+                def train_model(self, training_set):
+                    tweets = []
+                    model = {}
+                    with open("{}.txt".format(training_set), r) as t:
+                        for line in t:
+
+
+                        tweets = [line.strip() for line in t]
+
+
+                    for tweet in tweets:
+                        for word in word_set:
+                            if word in tweet:
+                                if model['word']:

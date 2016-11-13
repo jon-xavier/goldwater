@@ -1,65 +1,61 @@
 import threading
-import time
-import tweepy
-
+import json
+from twython import TwythonStreamer
 
 from v2.config import consumer_key, consumer_secret, access_token, access_secret
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
-twitter = tweepy.API(auth)
+class HashtagStreamer(TwythonStreamer):
 
-class Hashtag_File:
-    filename = ""
-    hashtags = set([])
+    streamer_hashtag = ''
+    counter = 60
 
-    def __init__(self, filename):
-        hashtags = self.read_hashtags(filename)
-        self.filename = filename
-        self.hashtags = set(hashtags)
-
-    def read_hashtags(self, filename):
-        with open(filename, 'r') as f:
-            hashtags = map(lambda x: x.strip(), f.readlines())
-        return hashtags
-
-    def new_hashtags(self):
-        current_hashtags = set(self.read_hashtags(self.filename))
-        new = current_hashtags - self.hashtags
-        self.hashtags = current_hashtags
-        return new
-
-    def return_hashtags(self):
-        self.read_hashtags()
-        return self.hashtags
+    def __init__(self, consumer_key, consumer_secret, access_token, access_secret, hashtag):
+        super().__init__(consumer_key, consumer_secret, access_token, access_secret)
+        self.streamer_hashtag = hashtag
+        try:
+            f = open('{}.json'.format(self.streamer_hashtag))
+        except FileNotFoundError:
+            open('{}.json'.format(self.streamer_hashtag), 'w')
 
 
-class HashtagMonitor(threading.Thread):
-    def __init__(self, hashtag_filename):
-        threading.Thread.__init__(self)
-        self.active_file = Hashtag_File(hashtag_filename)
-        self.stop_thread = False
-        self.last_query = set([])
+    def on_success(self, data):
+        self.counter = 60
+        if data.get('retweeted_status', None) is None:
 
-    def run(self):
-        while not self.stop_thread:
-            current_hashtags = self.active_file.read_hashtags()
-            if len(current_hashtags) >= len(self.last_query):
-                new_hashtags = self.active_file.new_hashtags()
+            with open('{}.json'.format(self.streamer_hashtag), 'a') as file:
+                encoded_string = json.dumps(data)
+                file.write('{}\n'.format(encoded_string))
+        print(self.streamer_hashtag)
+        print(data)
 
-        self.last_query = set(current_hashtags)
-
-
-
-class QueryTwitter:
+    def on_error(self, status_code, data):
+        if status_code == '420':
+            time.sleep(self.counter)
+            counter = self.counter*2
+        print(status_code)
+        print(data)
 
 
-class TrainingSetUpdater:
+def create_stream(hashtag):
+    stream = HashtagStreamer(consumer_key, consumer_secret, access_token, access_secret, hashtag)
+    print('created listener for {}'.format(stream.streamer_hashtag))
+    stream.statuses.filter(track=stream.streamer_hashtag)
 
+if __name__ == '__main__':
 
-def main():
+    with open('hashtags.txt', 'r') as f:
+        hashtags_to_crawl = list(map(lambda x: x.strip(), f.readlines()))
 
+    threads = []
+    print(hashtags_to_crawl)
+    for hashtag in hashtags_to_crawl:
+        print(hashtag)
+        t = threading.Thread(target=create_stream, args=(hashtag, ))
+        threads.append(t)
 
-if __name__ = "__main__":
-    main()
+    for thread in threads:
+        print('starting thread')
+        thread.start()
+
+    #stream.statuses.filter(track="#tcot")
 

@@ -8,6 +8,11 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
 twitter = tweepy.API(auth)
 
+class Tweet(Model_Factory):
+
+
+class Twitter_Container():
+
 
 class Twitter_Crawler():
 
@@ -31,6 +36,7 @@ class Twitter_Crawler():
 
                 for tweet in hash_list:
                     if not hasattr(tweet, 'retweeted_status'):
+                        #this is where I create the tweet object
                         text = tweet.text.encode('ascii', 'ignore')
                         if not text in current_tweets:
                             current_tweets.add(text)
